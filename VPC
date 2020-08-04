@@ -1,0 +1,68 @@
+/*
+1) Create a VPC (10.0.0.0/24)
+2) Create 2 Subnets
+    SN1 : 10.0.0.0/25
+	SN2: 10.0.0.128/25
+3) Make SN1 as Public SN
+4) Enable Auto Assign of public ip to SN1 subnet
+5) Launch ec2 instannce SN1 Subnet and install
+   apache2 
+6) Print Public ip of ec2 instance   
+*/
+
+resource aws_vpc "vpc1"
+{
+   cidr_block="10.0.0.0/24"
+}
+resource aws_subnet "sn1"
+{
+    cidr_block="10.0.0.0/25"
+	vpc_id="${aws_vpc.vpc1.id}"
+	map_public_ip_on_launch=true
+	availability_zone="ap-south-1a"
+	tags=
+	{
+	   "Name"="SN1-TF"
+	}
+}
+resource aws_subnet "sn2"
+{
+   cidr_block="10.0.0.128/25"
+   vpc_id="${aws_vpc.vpc1.id}"
+   tags=
+	{
+	   "Name"="SN2-TF"
+	}
+}
+resource aws_internet_gateway "igw"
+{
+    vpc_id="${aws_vpc.vpc1.id}"
+}
+resource aws_route_table "rt1"
+{
+   vpc_id="${aws_vpc.vpc1.id}"
+}
+resource aws_route "addigw"
+{
+  route_table_id= "${aws_route_table.rt1.id}"
+  destination_cidr_block="0.0.0.0/0"
+  gateway_id="${aws_internet_gateway.igw.id}"
+  
+}
+resource aws_route_table_association "sn1rt1"
+{
+   subnet_id ="${aws_subnet.sn1.id}"
+   route_table_id="${aws_route_table.rt1.id}"
+}
+resource aws_instance "sn1i1"
+{
+  ami="ami-03dcedc81ea3e7e27"
+  instance_type="t2.micro"
+  subnet_id="${aws_subnet.sn1.id}"
+  user_data ="${file("./1.sh")}"
+  key_name ="Sep04_new"  
+  tags=
+  {
+    "Name"="SN1-I2"
+  }
+}
